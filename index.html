@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>微光戀習曲 - 沉浸式戀愛視覺小說</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .bg-scene-1 { background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://images.unsplash.com/photo-1521587760476-6c12a4b040da?auto=format&fit=crop&w=1000&q=80') center/cover; }
+        .bg-scene-2 { background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=1000&q=80') center/cover; }
+        .bg-scene-3 { background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?auto=format&fit=crop&w=1000&q=80') center/cover; }
+    </style>
+</head>
+<body class="bg-gray-900 min-h-screen flex items-center justify-center font-sans">
+
+    <div class="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100 flex flex-col h-[780px] relative">
+        
+        <!-- 畫面一：上傳照片 / 遊戲前導 -->
+        <div id="screen-upload" class="absolute inset-0 bg-white z-30 p-8 flex flex-col justify-center text-center">
+            <div class="mb-6">
+                <span class="text-5xl">💌</span>
+                <h2 class="text-2xl font-bold text-gray-800 mt-3">微光戀習曲</h2>
+                <p class="text-sm text-gray-500 mt-2 leading-relaxed">
+                    請上傳一張主角的照片。<br>AI 將為你展開一段不受時間拘束、細膩浪漫的邂逅故事。
+                </p>
+            </div>
+
+            <label class="block border-2 border-dashed border-pink-300 rounded-2xl p-6 cursor-pointer hover:bg-pink-50 transition shadow-sm">
+                <input type="file" id="photo-input" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
+                <div id="upload-prompt">
+                    <p class="text-pink-600 font-semibold">📸 點擊上傳照片</p>
+                    <p class="text-xs text-gray-400 mt-1">作為故事核心對象的視覺來源</p>
+                </div>
+                <img id="preview-img" class="hidden mx-auto h-32 w-32 rounded-full object-cover mt-2 shadow-md border-4 border-pink-200">
+            </label>
+
+            <button id="start-btn" onclick="startGame()" disabled class="mt-8 w-full bg-gray-300 text-white font-bold py-3.5 rounded-2xl transition cursor-not-allowed shadow">
+                進入故事篇章
+            </button>
+        </div>
+
+        <!-- 遊戲主介面 -->
+        <div id="game-container" class="flex flex-col h-full hidden">
+            
+            <!-- 場景與頂部資訊區 -->
+            <div id="scene-bg" class="bg-scene-1 h-64 p-5 flex flex-col justify-between transition-all duration-700 relative">
+                <!-- 好感度狀態列 -->
+                <div class="flex justify-between items-center bg-black/40 backdrop-blur-md px-4 py-2 rounded-full text-white">
+                    <span id="scene-title-tag" class="text-xs font-medium text-pink-200">📍 場景一：巷弄文青書店</span>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs">好感度</span>
+                        <div class="w-20 bg-white/30 rounded-full h-2.5 overflow-hidden">
+                            <div id="favor-bar" class="bg-pink-400 h-full w-[50%] transition-all duration-300"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 主角大頭貼 -->
+                <div class="flex items-center gap-3 self-start bg-black/40 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/10">
+                    <img id="game-avatar" class="w-12 h-12 rounded-full object-cover border-2 border-white shadow">
+                    <div>
+                        <p class="text-white font-bold text-sm">心動對象</p>
+                        <p class="text-pink-200 text-xs">專屬沉浸式劇本</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 對話與劇情文字區 -->
+            <div class="flex-1 bg-white p-5 flex flex-col justify-between relative overflow-y-auto shadow-inner">
+                
+                <!-- 劇情對話框 -->
+                <div class="space-y-3 relative">
+                    <div class="bg-pink-50 p-5 rounded-2xl border border-pink-100 shadow-sm relative min-h-[140px] flex flex-col justify-between">
+                        <div class="absolute -top-2 left-6 w-4 h-4 bg-pink-50 rotate-45 border-t border-l border-pink-100"></div>
+                        <p id="story-text" class="text-gray-800 text-sm leading-relaxed">
+                            （故事載入中...）
+                        </p>
+                        <!-- 點擊繼續按鈕 (非選擇題時出現) -->
+                        <div id="next-step-btn-container" class="mt-4 text-right">
+                            <button onclick="nextStoryNode()" class="bg-pink-500 hover:bg-pink-600 text-white text-xs px-4 py-2 rounded-xl transition shadow">
+                                點擊繼續 ▾
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 即時回饋 Toast -->
+                <div id="feedback-toast" class="absolute top-2 left-1/2 -translate-x-1/2 bg-gray-900/90 text-white text-xs px-4 py-1.5 rounded-full opacity-0 transition-opacity duration-300 shadow-lg z-20">
+                    好感度上升 ✨
+                </div>
+
+                <!-- 選項按鈕區 (重要轉折點時出現) -->
+                <div id="options-container" class="space-y-2 mt-4 hidden">
+                    <!-- 動態生成選項 -->
+                </div>
+            </div>
+
+        </div>
+
+        <!-- 畫面三：遊戲結局結算 (含獎勵圖片) -->
+        <div id="screen-result" class="absolute inset-0 bg-white z-30 p-6 flex flex-col justify-center text-center hidden overflow-y-auto">
+            <span class="text-5xl" id="result-icon">💖</span>
+            <h2 id="result-title" class="text-2xl font-bold text-gray-800 mt-2"></h2>
+            
+            <!-- AI 生成獎勵圖片區 (僅高好感度 90% 以上解鎖) -->
+            <div id="reward-section" class="my-3 hidden">
+                <div class="relative inline-block border-4 border-pink-200 rounded-2xl overflow-hidden shadow-lg">
+                    <img id="reward-img" class="w-48 h-48 object-cover">
+                    <div class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/70 to-transparent py-1 text-white text-[10px]">
+                        ✨ AI 真人獎勵寫真已解鎖
+                    </div>
+                </div>
+            </div>
+
+            <p id="result-desc" class="text-xs text-gray-600 mt-1 leading-relaxed px-2"></p>
+            <button onclick="location.reload()" class="mt-4 w-full bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 rounded-2xl transition shadow-lg">
+                再次展開邂逅
+            </button>
+        </div>
+
+    </div>
+
+    <script>
+        let favorability = 50; 
+        let currentNodeIndex = 0;
+        let uploadedImageSrc = "";
+
+        // 劇本結構設計：支援純敘述推進 (type: 'story') 與轉折點選擇題 (type: 'choice')
+        const storyNodes = [
+            // --- 場景一：巷弄文青書店 ---
+            {
+                sceneClass: "bg-scene-1",
+                sceneTag: "📍 場景一：巷弄文青書店",
+                type: "story",
+                text: "午後突如其來的一場大雨，打亂了原本散步的步調。你急忙閃身躲進街角一間散發著木頭香氣的老舊獨立書店。"
+            },
+            {
+                sceneClass: "bg-scene-1",
+                sceneTag: "📍 場景一：巷弄文青書店",
+                type: "story",
+                text: "正當你沉浸在書架上的舊詩集時，身旁傳來了一道輕柔的翻書聲。對方轉頭看向你，眼神中帶著一絲意外與好奇。"
+            },
+            {
+                sceneClass: "bg-scene-1",
+                sceneTag: "📍 場景一：巷弄文青書店",
+                type: "choice",
+                text: "對方拿起了同一本書，向你微微一笑：「你也喜歡這本詩集嗎？這句『風會記得每一朵雲的形狀』，你覺得是什麼意思呢？」",
+                options: [
+                    { text: "「我覺得是指有些相遇雖然短暫，但在心裡留下的痕跡永遠不會消失。」", effect: 25, feedback: "對方眼睛一亮，露出極為驚豔的笑容。" },
+                    { text: "「嗯...就是字面上的意思吧，作者隨便寫寫的吧？」", effect: -5, feedback: "對方愣了一下，眼神中的光芒黯淡了些。" },
+                    { text: "「不知道耶，我只是剛好躲雨路過這裡。」", effect: -20, feedback: "對方尷尬地笑笑：「這樣啊...那還真巧。」" }
+                ]
+            },
+            // --- 場景二：轉角手作咖啡廳 ---
+            {
+                sceneClass: "bg-scene-2",
+                sceneTag: "📍 場景二：轉角手作咖啡廳",
+                type: "story",
+                text: "雨漸漸停了，空氣中透著泥土與咖啡豆交織的清香。你們順理成章地一起走進了隔壁溫馨的手作咖啡廳。"
+            },
+            {
+                sceneClass: "bg-scene-2",
+                sceneTag: "📍 場景二：轉角手作咖啡廳",
+                type: "choice",
+                text: "服務生送上了兩杯熱可可。對方托著腮看著你，輕聲問道：「今天這場雨打亂了你原本的行程嗎？還是...其實你本來就沒有特別想去哪裡？」",
+                options: [
+                    { text: "「本來有計畫，但遇到你之後，我覺得今天的行程已經完美了。」", effect: 25, feedback: "對方臉頰微微泛紅，害羞地低頭喝了一口熱可可。" },
+                    { text: "「本來想去看展覽的，不過現在泡在咖啡廳喝東西也不錯。」", effect: 10, feedback: "對方微笑點頭：「嗯！這家店的氛圍真的很舒服。」" },
+                    { text: "「對啊，本來要趕著回家打遊戲的，結果被雨耽誤了。」", effect: -25, feedback: "對方眉頭微微皺起：「呃...那我是不是打擾到你了？」" }
+                ]
+            },
+            // --- 場景三：微光夜景公園 ---
+            {
+                sceneClass: "bg-scene-3",
+                sceneTag: "📍 場景三：微光夜景公園",
+                type: "story",
+                text: "不知不覺天色暗了下來，城市的燈火倒映在河面上，微風輕輕吹過，氣氛變得格外溫柔。"
+            },
+            {
+                sceneClass: "bg-scene-3",
+                sceneTag: "📍 場景三：微光夜景公園",
+                type: "choice",
+                text: "走到公園的分岔路口時，對方停下腳步，有些依依不舍地看著你：「今天真的很開心能認識你...如果接下來還有空的話，你希望我們下次去哪裡？」",
+                options: [
+                    { text: "「如果可以的話，我希望下週能帶你去那家一直想去的景觀餐廳看夜景。」", effect: 25, feedback: "對方開心地笑了：「好啊！一言為定喔！」" },
+                    { text: "「下次有機會的話，再一起隨便找家店喝咖啡吧。」", effect: 5, feedback: "對方點頭微笑：「嗯，隨緣囉！」" },
+                    { text: "「很晚了耶，我看我們趕快各自回家洗洗睡吧。」", effect: -30, feedback: "對方神情失落：「好吧...那你路上小心。」" }
+                ]
+            }
+        ];
+
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    uploadedImageSrc = e.target.result;
+                    const preview = document.getElementById('preview-img');
+                    preview.src = uploadedImageSrc;
+                    preview.classList.remove('hidden');
+                    document.getElementById('upload-prompt').classList.add('hidden');
+                    
+                    const startBtn = document.getElementById('start-btn');
+                    startBtn.disabled = false;
+                    startBtn.classList.remove('bg-gray-300', 'cursor-not-allowed');
+                    startBtn.classList.add('bg-pink-500', 'hover:bg-pink-600', 'cursor-pointer');
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function startGame() {
+            document.getElementById('screen-upload').classList.add('hidden');
+            document.getElementById('game-container').classList.remove('hidden');
+            document.getElementById('game-avatar').src = uploadedImageSrc;
+            loadNode();
+        }
+
+        function loadNode() {
+            if (currentNodeIndex >= storyNodes.length) {
+                endGame();
+                return;
+            }
+
+            const node = storyNodes[currentNodeIndex];
+
+            // 更新場景與標籤
+            document.getElementById('scene-bg').className = `${node.sceneClass} h-64 p-5 flex flex-col justify-between transition-all duration-700 relative`;
+            document.getElementById('scene-title-tag').innerText = node.sceneTag;
+            document.getElementById('story-text').innerText = node.text;
+
+            const nextBtnContainer = document.getElementById('next-step-btn-container');
+            const optionsContainer = document.getElementById('options-container');
+
+            if (node.type === "story") {
+                nextBtnContainer.classList.remove('hidden');
+                optionsContainer.classList.add('hidden');
+            } else {
+                nextBtnContainer.classList.add('hidden');
+                optionsContainer.classList.remove('hidden');
+                
+                optionsContainer.innerHTML = '';
+                node.options.forEach((opt) => {
+                    const btn = document.createElement('button');
+                    btn.className = "w-full text-left p-3.5 rounded-2xl border border-pink-100 bg-pink-50/50 hover:bg-pink-100/70 text-gray-700 text-sm transition-all font-medium shadow-sm hover:shadow";
+                    btn.innerText = opt.text;
+                    btn.onclick = () => handleChoice(opt.effect, opt.feedback);
+                    optionsContainer.appendChild(btn);
+                });
+            }
+        }
+
+        function nextStoryNode() {
+            currentNodeIndex++;
+            loadNode();
+        }
+
+        function handleChoice(effect, feedbackText) {
+            favorability = Math.max(0, Math.min(100, favorability + effect));
+            updateFavorBar();
+            showFeedback(feedbackText);
+
+            currentNodeIndex++;
+            setTimeout(() => {
+                loadNode();
+            }, 1200);
+        }
+
+        function updateFavorBar() {
+            const bar = document.getElementById('favor-bar');
+            bar.style.width = `${favorability}%`;
+        }
+
+        function showFeedback(text) {
+            const toast = document.getElementById('feedback-toast');
+            toast.innerText = text;
+            toast.style.opacity = '1';
+            setTimeout(() => {
+                toast.style.opacity = '0';
+            }, 1800);
+        }
+
+        function endGame() {
+            document.getElementById('game-container').classList.add('hidden');
+            document.getElementById('screen-result').classList.remove('hidden');
+
+            const title = document.getElementById('result-title');
+            const desc = document.getElementById('result-desc');
+            const icon = document.getElementById('result-icon');
+            const rewardSection = document.getElementById('reward-section');
+
+            if (favorability >= 90) {
+                icon.innerText = "💖";
+                title.innerText = "完美結局：心動奇蹟！";
+                desc.innerText = `好感度高達 ${favorability}%！你們的默契達到最高點，解鎖了特別的真人獎勵寫真！`;
+                
+                // 顯示 AI 生成獎勵寫真（此處以玩家上傳的照片作為真人寫真展示）
+                const rewardImg = document.getElementById('reward-img');
+                rewardImg.src = uploadedImageSrc;
+                rewardSection.classList.remove('hidden');
+            } else if (favorability >= 60) {
+                icon.innerText = "☕";
+                title.innerText = "甜蜜結局：友達以上";
+                desc.innerText = `最終好感度 ${favorability}%。雖然還差一點點達到 90% 的完美解鎖條件，但今天已經留下了非常美好的浪漫回憶！`;
+            } else {
+                icon.innerText = "🌧️";
+                title.innerText = "遺憾結局：擦身而過";
+                desc.innerText = `最終好感度 ${favorability}%。對話中的選項似乎沒有對到頻率，彼此在路口揮手道別。加油，下次一定能做得更好！`;
+            }
+        }
+    </script>
+</body>
+</html>
+
