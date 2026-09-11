@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3分鐘心跳戀愛模擬器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-pink-50 min-h-screen flex items-center justify-center font-sans">
+
+    <div class="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden border border-pink-100">
+        
+        <!-- 頂部資訊列 (狀態與計時器) -->
+        <div id="header-bar" class="bg-pink-500 text-white px-6 py-4 flex justify-between items-center hidden">
+            <span id="timer" class="text-lg font-bold">⏱️ 03:00</span>
+            <div class="flex items-center gap-2">
+                <span class="text-sm">好感度:</span>
+                <div class="w-24 bg-pink-300 rounded-full h-3 overflow-hidden">
+                    <div id="favor-bar" class="bg-yellow-300 h-full w-1/2 transition-all duration-300"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 畫面一：上傳照片 / 授權相機 -->
+        <div id="screen-upload" class="p-8 text-center">
+            <div class="mb-6">
+                <span class="text-4xl">📸</span>
+                <h2 class="text-2xl font-bold text-gray-800 mt-2">3分鐘戀愛模擬器</h2>
+                <p class="text-sm text-gray-500 mt-1">請授權並上傳一張照片，AI 將為你量身打造戀愛劇本</p>
+            </div>
+
+            <label class="block border-2 border-dashed border-pink-300 rounded-xl p-6 cursor-pointer hover:bg-pink-50 transition">
+                <input type="file" id="photo-input" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
+                <div id="upload-prompt">
+                    <p class="text-pink-600 font-medium">點擊選擇照片或拍照</p>
+                    <p class="text-xs text-gray-400 mt-1">支援手機相簿授權與檔案上傳</p>
+                </div>
+                <img id="preview-img" class="hidden mx-auto max-h-40 rounded-lg object-cover mt-2">
+            </label>
+
+            <button id="start-btn" onclick="startGame()" disabled class="mt-6 w-full bg-gray-300 text-white font-bold py-3 rounded-xl transition cursor-not-allowed">
+                分析照片並開始遊戲
+            </button>
+        </div>
+
+        <!-- 畫面二：遊戲對話與選項 -->
+        <div id="screen-game" class="hidden flex flex-col h-[550px]">
+            <!-- 角色與對話區域 -->
+            <div class="flex-1 bg-gray-50 p-6 flex flex-col justify-between relative overflow-y-auto">
+                <!-- AI 判定提示 -->
+                <div id="ai-notice" class="text-xs bg-pink-100 text-pink-700 px-3 py-1 rounded-full self-center mb-4">
+                    🤖 AI 已判定對象為：<span id="target-gender-text">女生</span>
+                </div>
+
+                <!-- 對話框 -->
+                <div class="flex items-start gap-3">
+                    <div class="w-12 h-12 rounded-full bg-pink-400 flex items-center justify-center text-white text-xl font-bold shrink-0 shadow">
+                        👩
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 max-w-[75%]">
+                        <p id="dialogue-text" class="text-gray-700 text-sm leading-relaxed">
+                            （對話載入中...）
+                        </p>
+                    </div>
+                </div>
+
+                <!-- 回饋訊息（例如：好感度上升/下降） -->
+                <div id="feedback-toast" class="absolute top-16 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-3 py-1 rounded-full opacity-0 transition-opacity duration-300">
+                    好感度上升 ✨
+                </div>
+            </div>
+
+            <!-- 選項區域 (固定 3 個選項) -->
+            <div id="options-container" class="p-4 bg-white border-t border-gray-100 flex flex-col gap-3">
+                <!-- 動態生成選項 -->
+            </div>
+        </div>
+
+        <!-- 畫面三：遊戲結算 -->
+        <div id="screen-result" class="hidden p-8 text-center">
+            <span class="text-5xl" id="result-icon">🎉</span>
+            <h2 id="result-title" class="text-2xl font-bold text-gray-800 mt-3"></h2>
+            <p id="result-desc" class="text-sm text-gray-600 mt-2 leading-relaxed"></p>
+            <button onclick="location.reload()" class="mt-6 w-full bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 rounded-xl transition">
+                再玩一次
+            </button>
+        </div>
+
+    </div>
+
+    <script>
+        // 遊戲狀態變數
+        let favorability = 50; // 初始好感度 0 - 100
+        let currentStep = 0;
+        let timerInterval;
+        let timeLeft = 180; // 3分鐘 (180秒)
+        let detectedGender = "女生";
+
+        // 模擬劇本資料庫 (可對應不同性別或隨機生成)
+        const scripts = [
+            {
+                dialogue: "今天難得約會，你看起來好像有點心不在焉，是發生什麼事了嗎？",
+                options: [
+                    { text: "「哪有，只是妳今天太漂亮，讓我看得入神了。」", effect: 20, feedback: "好感度大增！對方害羞地笑了笑。" },
+                    { text: "「工作有點累，不過見到妳就好多了。」", effect: 5, feedback: "對方關心地點了點頭。" },
+                    { text: "「還好啊，妳想太多了吧。」", effect: -20, feedback: "對方眉頭一皺，覺得你很敷衍。" }
+                ]
+            },
+            {
+                dialogue: "（看著菜單）這家餐廳看起來不便宜耶，等下我們要怎麼結帳？",
+                options: [
+                    { text: "「難得約會，今天這餐我請客，不用跟我客氣！」", effect: 15, feedback: "對方覺得你很大方、很有擔當。" },
+                    { text: "「沒關係，我們等等各付各的就好。」", effect: 0, feedback: "對方覺得很公平，但少了一點浪漫。" },
+                    { text: "「啊？妳沒帶錢嗎？那我身上可能也不夠付全額欸……」", effect: -25, feedback: "對方瞬間幻滅，眼神充滿懷疑。" }
+                ]
+            },
+            {
+                dialogue: "吃完飯之後，離電影開場還有一陣子，你想去哪裡走走？",
+                options: [
+                    { text: "「附近剛好有一家很棒的景觀咖啡廳，我們去喝杯東西聊聊天吧！」", effect: 15, feedback: "對方稱讚你很有品味、行程安排得很棒。" },
+                    { text: "「那去旁邊的公園散散步吹吹風吧。」", effect: 5, feedback: "對方覺得簡單輕鬆也不錯。" },
+                    { text: "「好累喔，要不去網咖打電動好了？」", effect: -30, feedback: "對方翻了个白眼，覺得你完全不懂氣氛。" }
+                ]
+            }
+        ];
+
+        // 處理照片上傳
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById('preview-img');
+                    preview.src = e.target.result;
+                    preview.classList.remove('hidden');
+                    document.getElementById('upload-prompt').classList.add('hidden');
+                    
+                    // 啟用開始按鈕
+                    const startBtn = document.getElementById('start-btn');
+                    startBtn.disabled = false;
+                    startBtn.classList.remove('bg-gray-300', 'cursor-not-allowed');
+                    startBtn.classList.add('bg-pink-500', 'hover:bg-pink-600', 'cursor-pointer');
+
+                    // 模擬 AI 判斷性別 (實際串接時可由後端 AI 模型判斷)
+                    detectedGender = Math.random() > 0.5 ? "女生" : "男生";
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // 開始遊戲
+        function startGame() {
+            document.getElementById('screen-upload').classList.add('hidden');
+            document.getElementById('screen-game').classList.remove('hidden');
+            document.getElementById('header-bar').classList.remove('hidden');
+            document.getElementById('target-gender-text').innerText = detectedGender;
+
+            startTimer();
+            loadStep();
+        }
+
+        // 啟動 3 分鐘倒數計時
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                let minutes = Math.floor(timeLeft / 60);
+                let seconds = timeLeft % 60;
+                document.getElementById('timer').innerText = `⏱️ ${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    endGame("timeout");
+                }
+            }, 1000);
+        }
+
+        // 載入對話步驟
+        function loadStep() {
+            if (currentStep >= scripts.length) {
+                clearInterval(timerInterval);
+                endGame("success");
+                return;
+            }
+
+            const data = scripts[currentStep];
+            document.getElementById('dialogue-text').innerText = data.dialogue;
+
+            const optionsContainer = document.getElementById('options-container');
+            optionsContainer.innerHTML = '';
+
+            data.options.forEach((opt) => {
+                const btn = document.createElement('button');
+                btn.className = "w-full text-left p-3 rounded-xl border border-pink-200 hover:bg-pink-50 text-gray-700 text-sm transition font-medium";
+                btn.innerText = opt.text;
+                btn.onclick = () => handleChoice(opt.effect, opt.feedback);
+                optionsContainer.appendChild(btn);
+            });
+        }
+
+        // 處理玩家選項
+        function handleChoice(effect, feedbackText) {
+            favorability = Math.max(0, Math.min(100, favorability + effect));
+            updateFavorBar();
+            showFeedback(feedbackText);
+
+            currentStep++;
+            setTimeout(() => {
+                loadStep();
+            }, 1000); // 停留 1 秒讓玩家看見回饋
+        }
+
+        // 更新好感度條
+        function updateFavorBar() {
+            const bar = document.getElementById('favor-bar');
+            bar.style.width = `${favorability}%`;
+        }
+
+        // 顯示即時回饋
+        function showFeedback(text) {
+            const toast = document.getElementById('feedback-toast');
+            toast.innerText = text;
+            toast.style.opacity = '1';
+            setTimeout(() => {
+                toast.style.opacity = '0';
+            }, 1500);
+        }
+
+        // 遊戲結束結算
+        function endGame(reason) {
+            document.getElementById('screen-game').classList.add('hidden');
+            document.getElementById('header-bar').classList.add('hidden');
+            document.getElementById('screen-result').classList.remove('hidden');
+
+            const title = document.getElementById('result-title');
+            const desc = document.getElementById('result-desc');
+            const icon = document.getElementById('result-icon');
+
+            if (reason === "timeout") {
+                icon.innerText = "⏳";
+                title.innerText = "時間到！";
+                desc.innerText = `聊得太慢啦！在 3 分鐘內沒能推進關係，你們的緣分就這樣擦身而過囉。最終好感度：${favorability}%`;
+            } else if (favorability >= 70) {
+                icon.innerText = "💖";
+                title.innerText = "戀情大成功！";
+                desc.innerText = `太棒了！你們相談甚歡，對方對你的好感度破表，你們決定下一步試著交往看看！最終好感度：${favorability}%`;
+            } else if (favorability >= 40) {
+                icon.innerText = "🤝";
+                title.innerText = "友達以上，戀人未滿";
+                desc.innerText = `今天聊得還算愉快，彼此留下不錯的印象，不過還需要多加把勁才能突破現狀喔！最終好感度：${favorability}%`;
+            } else {
+                icon.innerText = "💔";
+                title.innerText = "好人卡入手……";
+                desc.innerText = `今天的直男發言或選項似乎踩到不少雷，對方找藉口先離開了……加油，下次會更好！最終好感度：${favorability}%`;
+            }
+        }
+    </script>
+</body>
+</html>
+
