@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3分鐘心跳戀愛模擬器 - 沉浸式劇本版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 背景動態切換特效 */
+        .bg-scene-1 { background: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('https://images.unsplash.com/photo-1521587760476-6c12a4b040da?auto=format&fit=crop&w=1000&q=80') center/cover; }
+        .bg-scene-2 { background: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=1000&q=80') center/cover; }
+        .bg-scene-3 { background: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?auto=format&fit=crop&w=1000&q=80') center/cover; }
+    </style>
+</head>
+<body class="bg-gray-900 min-h-screen flex items-center justify-center font-sans">
+
+    <div class="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100 flex flex-col h-[750px] relative">
+        
+        <!-- 畫面一：上傳照片 / 遊戲前導 -->
+        <div id="screen-upload" class="absolute inset-0 bg-white z-20 p-8 flex flex-col justify-center text-center">
+            <div class="mb-6">
+                <span class="text-5xl">🌸</span>
+                <h2 class="text-2xl font-bold text-gray-800 mt-3">微光中的戀愛絮語</h2>
+                <p class="text-sm text-gray-500 mt-2 leading-relaxed">
+                    請上傳一張照片或授權相機。<br>AI 將為你解析並安排一段為期 3 分鐘的命運浪漫邂逅。
+                </p>
+            </div>
+
+            <label class="block border-2 border-dashed border-pink-300 rounded-2xl p-6 cursor-pointer hover:bg-pink-50 transition shadow-sm">
+                <input type="file" id="photo-input" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
+                <div id="upload-prompt">
+                    <p class="text-pink-600 font-semibold">📸 點擊上傳或拍攝照片</p>
+                    <p class="text-xs text-gray-400 mt-1">支援手機相簿與即時相機授權</p>
+                </div>
+                <img id="preview-img" class="hidden mx-auto h-32 w-32 rounded-full object-cover mt-2 shadow-md border-4 border-pink-200">
+            </label>
+
+            <button id="start-btn" onclick="startGame()" disabled class="mt-8 w-full bg-gray-300 text-white font-bold py-3.5 rounded-2xl transition cursor-not-allowed shadow">
+                開啟命運篇章
+            </button>
+        </div>
+
+        <!-- 遊戲主介面 (包含動態背景、角色大頭貼、計時器) -->
+        <div id="game-container" class="flex flex-col h-full hidden">
+            
+            <!-- 頂部資訊與背景變換區 -->
+            <div id="scene-bg" class="bg-scene-1 h-64 p-5 flex flex-col justify-between transition-all duration-700 relative">
+                <!-- 頂部狀態列 -->
+                <div class="flex justify-between items-center bg-black/30 backdrop-blur-md px-4 py-2 rounded-full text-white">
+                    <span id="timer" class="text-sm font-bold tracking-wider">⏱️ 03:00</span>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs">好感度</span>
+                        <div class="w-20 bg-white/30 rounded-full h-2.5 overflow-hidden">
+                            <div id="favor-bar" class="bg-pink-400 h-full w-1/2 transition-all duration-300"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 角色大頭貼 (玩家上傳的照片) 與名字 -->
+                <div class="flex items-center gap-3 self-start bg-black/40 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/10">
+                    <img id="game-avatar" class="w-12 h-12 rounded-full object-cover border-2 border-white shadow">
+                    <div>
+                        <p id="target-name" class="text-white font-bold text-sm">神秘的眼光</p>
+                        <p id="scene-title-tag" class="text-pink-200 text-xs">📍 場景一：巷弄文青書店</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 對話與互動區 -->
+            <div class="flex-1 bg-white p-5 flex flex-col justify-between relative overflow-y-auto shadow-inner">
+                
+                <!-- 對話泡泡 -->
+                <div class="space-y-3">
+                    <div class="bg-pink-50 p-4 rounded-2xl border border-pink-100 shadow-sm relative">
+                        <div class="absolute -top-2 left-6 w-4 h-4 bg-pink-50 rotate-45 border-t border-l border-pink-100"></div>
+                        <p id="dialogue-text" class="text-gray-800 text-sm leading-relaxed">
+                            （劇本載入中...）
+                        </p>
+                    </div>
+                </div>
+
+                <!-- 即時互動回饋 Toast -->
+                <div id="feedback-toast" class="absolute top-2 left-1/2 -translate-x-1/2 bg-gray-900/90 text-white text-xs px-4 py-1.5 rounded-full opacity-0 transition-opacity duration-300 shadow-lg">
+                    好感度上升 ✨
+                </div>
+
+                <!-- 選項按鈕區 (固定 3 個選項) -->
+                <div id="options-container" class="space-y-2 mt-4">
+                    <!-- 動態生成選項 -->
+                </div>
+            </div>
+
+        </div>
+
+        <!-- 畫面三：遊戲結局結算 -->
+        <div id="screen-result" class="absolute inset-0 bg-white z-30 p-8 flex flex-col justify-center text-center hidden">
+            <span class="text-6xl" id="result-icon">💖</span>
+            <h2 id="result-title" class="text-2xl font-bold text-gray-800 mt-4"></h2>
+            <p id="result-desc" class="text-sm text-gray-600 mt-3 leading-relaxed px-4"></p>
+            <button onclick="location.reload()" class="mt-8 w-full bg-pink-500 hover:bg-pink-600 text-white font-bold py-3.5 rounded-2xl transition shadow-lg">
+                再次展開邂逅
+            </button>
+        </div>
+
+    </div>
+
+    <script>
+        // 遊戲狀態變數
+        let favorability = 50; 
+        let currentStep = 0;
+        let timerInterval;
+        let timeLeft = 180; // 3分鐘
+        let uploadedImageSrc = "";
+
+        // 完整的故事劇本設計 (包含場景切換與情境)
+        const storyScript = [
+            {
+                sceneClass: "bg-scene-1",
+                sceneTag: "📍 場景一：巷弄文青書店",
+                dialogue: "午後的雷陣雨把我們同時困在了一間老舊的獨立書店裡。你看著架上的舊詩集發呆，而對方剛好拿起了同一本書，轉頭向你微微一笑：「你也喜歡這本詩集嗎？這句『風會記得每一朵雲的形狀』，你覺得是什麼意思呢？」",
+                options: [
+                    { text: "「我覺得是指有些相遇雖然短暫，但在心裡留下的痕跡永遠不會消失。」", effect: 25, feedback: "對方眼睛一亮，露出極為驚豔的笑容。" },
+                    { text: "「嗯...就是字面上的意思吧，作者隨便寫寫的吧？」", effect: -5, feedback: "對方愣了一下，眼神中的光芒黯淡了些。" },
+                    { text: "「不知道耶，我只是剛好躲雨路過這裡。」", effect: -20, feedback: "對方尷尬地笑笑：「這樣啊...那還真巧。」" }
+                ]
+            },
+            {
+                sceneClass: "bg-scene-2",
+                sceneTag: "📍 場景二：轉角手作咖啡廳",
+                dialogue: "雨漸漸停了，空氣中帶著泥土的清香。你們順勢一起走到了隔壁溫馨的手作咖啡廳。服務生端上了兩杯熱可可，對方托著腮看著你，輕聲問道：「今天這場雨打亂了你原本的行程嗎？還是...其實你本來就沒有特別想去哪裡？」",
+                options: [
+                    { text: "「本來有計畫，但遇到你之後，我覺得今天的行程已經完美了。」", effect: 25, feedback: "對方臉頰微微泛紅，害羞地低頭喝了一口熱可可。" },
+                    { text: "「本來想去看展覽的，不過現在泡在咖啡廳喝東西也不錯。」", effect: 10, feedback: "對方微笑點頭：「嗯！這家店的氛圍真的很舒服。」" },
+                    { text: "「對啊，本來要趕著回家打遊戲的，結果被雨耽誤了。」", effect: -25, feedback: "對方眉頭微微皺起：「呃...那我是不是打擾到你了？」" }
+                ]
+            },
+            {
+                sceneClass: "bg-scene-3",
+                sceneTag: "📍 場景三：微光夜景公園",
+                dialogue: "不知不覺天色暗了下來，城市點點燈光倒映在河面上。走到公園的分岔路口時，對方停下腳步，有些依依不舍地看著你：「今天真的很開心能認識你...如果接下來還有空的話，你希望我們下次去哪裡？」",
+                options: [
+                    { text: "「如果可以的話，我希望下週能帶你去那家一直想去的景觀餐廳看夜景。」", effect: 30, feedback: "對方開心地笑了：「好啊！一言為定喔！」" },
+                    { text: "「下次有機會的話，再一起隨便找家店喝咖啡吧。」", effect: 5, feedback: "對方點頭微笑：「嗯，隨緣囉！」" },
+                    { text: "「很晚了耶，我看我們趕快各自回家洗洗睡吧。」", effect: -30, feedback: "對方神情失落：「好吧...那你路上小心。」" }
+                ]
+            }
+        ];
+
+        // 處理照片上傳
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    uploadedImageSrc = e.target.result;
+                    
+                    // 預覽圖片設定
+                    const preview = document.getElementById('preview-img');
+                    preview.src = uploadedImageSrc;
+                    preview.classList.remove('hidden');
+                    document.getElementById('upload-prompt').classList.add('hidden');
+                    
+                    // 啟用開始按鈕
+                    const startBtn = document.getElementById('start-btn');
+                    startBtn.disabled = false;
+                    startBtn.classList.remove('bg-gray-300', 'cursor-not-allowed');
+                    startBtn.classList.add('bg-pink-500', 'hover:bg-pink-600', 'cursor-pointer');
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // 開始遊戲
+        function startGame() {
+            document.getElementById('screen-upload').classList.add('hidden');
+            document.getElementById('game-container').classList.remove('hidden');
+
+            // 將上傳的照片設定為遊戲中的大頭貼
+            document.getElementById('game-avatar').src = uploadedImageSrc;
+            
+            startTimer();
+            loadStoryStep();
+        }
+
+        // 啟動 3 分鐘倒數計時
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                let minutes = Math.floor(timeLeft / 60);
+                let seconds = timeLeft % 60;
+                document.getElementById('timer').innerText = `⏱️ ${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    endGame("timeout");
+                }
+            }, 1000);
+        }
+
+        // 載入場景與劇本
+        function loadStoryStep() {
+            if (currentStep >= storyScript.length) {
+                clearInterval(timerInterval);
+                endGame("success");
+                return;
+            }
+
+            const stepData = storyScript[currentStep];
+
+            // 動態切換背景與場景標籤
+            const sceneBg = document.getElementById('scene-bg');
+            sceneBg.className = `${stepData.sceneClass} h-64 p-5 flex flex-col justify-between transition-all duration-700 relative`;
+            document.getElementById('scene-title-tag').innerText = stepData.sceneTag;
+
+            // 載入對話
+            document.getElementById('dialogue-text').innerText = stepData.dialogue;
+
+            // 載入選項
+            const optionsContainer = document.getElementById('options-container');
+            optionsContainer.innerHTML = '';
+
+            stepData.options.forEach((opt) => {
+                const btn = document.createElement('button');
+                btn.className = "w-full text-left p-3.5 rounded-2xl border border-pink-100 bg-pink-50/50 hover:bg-pink-100/70 text-gray-700 text-sm transition-all font-medium shadow-sm hover:shadow";
+                btn.innerText = opt.text;
+                btn.onclick = () => handleChoice(opt.effect, opt.feedback);
+                optionsContainer.appendChild(btn);
+            });
+        }
+
+        // 處理玩家選擇
+        function handleChoice(effect, feedbackText) {
+            favorability = Math.max(0, Math.min(100, favorability + effect));
+            updateFavorBar();
+            showFeedback(feedbackText);
+
+            currentStep++;
+            setTimeout(() => {
+                loadStoryStep();
+            }, 1200); // 停留 1.2 秒讓玩家閱讀回饋
+        }
+
+        // 更新好感度進度條
+        function updateFavorBar() {
+            const bar = document.getElementById('favor-bar');
+            bar.style.width = `${favorability}%`;
+        }
+
+        // 顯示即時回饋 Toast
+        function showFeedback(text) {
+            const toast = document.getElementById('feedback-toast');
+            toast.innerText = text;
+            toast.style.opacity = '1';
+            setTimeout(() => {
+                toast.style.opacity = '0';
+            }, 1800);
+        }
+
+        // 遊戲結束結算
+        function endGame(reason) {
+            document.getElementById('game-container').classList.add('hidden');
+            document.getElementById('screen-result').classList.remove('hidden');
+
+            const title = document.getElementById('result-title');
+            const desc = document.getElementById('result-desc');
+            const icon = document.getElementById('result-icon');
+
+            if (reason === "timeout") {
+                icon.innerText = "⏳";
+                title.innerText = "時光匆忙，緣分擦身";
+                desc.innerText = `在 3 分鐘的對話中，你們還來不及把心意傳達給彼此，雨就完全停了，各自消失在城市的人海中。最終好感度：${favorability}%`;
+            } else if (favorability >= 75) {
+                icon.innerText = "💖";
+                title.innerText = "浪漫戀情，完美開花！";
+                desc.innerText = `太棒了！這場午後雷陣雨成了你們最浪漫的紅線。相談甚歡的你們，在夜景下約好了下一次的專屬約會！最終好感度：${favorability}%`;
+            } else if (favorability >= 45) {
+                icon.innerText = "☕";
+                title.innerText = "友達以上，心意萌芽";
+                desc.innerText = `今天留下了非常溫馨美好的午後回憶，彼此都有了不錯的好感，這是個充滿無限可能的開始喔！最終好感度：${favorability}%`;
+            } else {
+                icon.innerText = "🌧️";
+                title.innerText = "雨過天晴，但頻率不對";
+                desc.innerText `今天的對話似乎常踩到雷區，讓這場雨顯得有點尷尬又冷清。不過沒關係，下一場邂逅會更好！最終好感度：${favorability}%`;
+            }
+        }
+    </script>
+</body>
+</html>
+
