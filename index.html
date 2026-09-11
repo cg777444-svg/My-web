@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>霧境微光：深層心智戀愛模擬</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .bg-scene-1 { background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1200&q=80') center/cover; }
+        .bg-scene-2 { background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=1200&q=80') center/cover; }
+        .bg-scene-3 { background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80') center/cover; }
+        .bg-scene-4 { background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=1200&q=80') center/cover; }
+    </style>
+</head>
+<body class="bg-gray-950 min-h-screen flex items-center justify-center font-sans text-gray-100">
+
+    <div class="w-full max-w-lg bg-gray-900 rounded-3xl shadow-2xl overflow-hidden border border-gray-800 flex flex-col h-[850px] relative">
+        
+        <!-- 畫面一：上傳照片 / 遊戲前導 -->
+        <div id="screen-upload" class="absolute inset-0 bg-gray-900 z-30 p-8 flex flex-col justify-center text-center">
+            <div class="mb-6">
+                <span class="text-5xl">🗝️</span>
+                <h2 class="text-2xl font-bold text-white mt-3">霧境微光</h2>
+                <p class="text-sm text-gray-400 mt-2 leading-relaxed">
+                    請上傳一張您的相片或授權相機。<br>系統將進行心靈頻率對齊，隨後展開一場長篇、心理博弈與情感交織的沉浸式戀愛長劇。
+                </p>
+            </div>
+
+            <label class="block border-2 border-dashed border-gray-700 rounded-2xl p-6 cursor-pointer hover:bg-gray-800/50 transition shadow-inner">
+                <input type="file" id="photo-input" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
+                <div id="upload-prompt">
+                    <p class="text-pink-400 font-semibold">📸 上傳照片以啟動頻率校準</p>
+                    <p class="text-xs text-gray-500 mt-1">僅用於系統內部心智場域對齊</p>
+                </div>
+                <img id="preview-img" class="hidden mx-auto h-32 w-32 rounded-full object-cover mt-2 shadow-md border-4 border-pink-500/30">
+            </label>
+
+            <button id="start-btn" onclick="startGame()" disabled class="mt-8 w-full bg-gray-800 text-gray-500 font-bold py-3.5 rounded-2xl transition cursor-not-allowed shadow">
+                進入迷霧深處
+            </button>
+        </div>
+
+        <!-- 遊戲主介面 -->
+        <div id="game-container" class="flex flex-col h-full hidden">
+            
+            <!-- 場景與頂部資訊區 -->
+            <div id="scene-bg" class="bg-scene-1 h-56 p-5 flex flex-col justify-between transition-all duration-700 relative">
+                <!-- 好感度狀態列 -->
+                <div class="flex justify-between items-center bg-black/50 backdrop-blur-md px-4 py-2 rounded-full border border-white/10">
+                    <span id="scene-title-tag" class="text-xs font-medium text-pink-300">📍 第一章：無人之境的迴響</span>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-gray-300">心靈同步率</span>
+                        <div class="w-24 bg-white/20 rounded-full h-2.5 overflow-hidden">
+                            <div id="favor-bar" class="bg-pink-500 h-full w-[50%] transition-all duration-500"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 角色資訊卡 -->
+                <div class="flex items-center gap-3 self-start bg-black/50 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/10">
+                    <div class="w-10 h-10 rounded-full bg-pink-600/50 flex items-center justify-center font-bold text-white text-sm shadow">
+                        她
+                    </div>
+                    <div>
+                        <p class="text-white font-bold text-sm">夏唯 (Hsia Wei)</p>
+                        <p class="text-gray-400 text-xs">神祕而心思細膩的同行者</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 對話與劇情文字區 (長篇小說內文風格) -->
+            <div class="flex-1 bg-gray-900 p-6 flex flex-col justify-between relative overflow-y-auto shadow-inner">
+                
+                <!-- 劇情文字框 -->
+                <div class="space-y-4 relative">
+                    <div class="bg-gray-800/80 p-6 rounded-2xl border border-gray-700/60 shadow-lg relative min-h-[180px] flex flex-col justify-between">
+                        <p id="story-text" class="text-gray-200 text-sm md:text-base leading-relaxed tracking-wide">
+                            （劇本載入中...）
+                        </p>
+                        <!-- 點擊繼續按鈕 -->
+                        <div id="next-step-btn-container" class="mt-6 text-right">
+                            <button onclick="nextStoryNode()" class="bg-pink-600 hover:bg-pink-500 text-white text-xs px-5 py-2.5 rounded-xl transition shadow-lg font-medium tracking-wider">
+                                繼續閱讀 / 推進劇情 ▾
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 隱蔽回饋 Toast (不透露具體加減分，僅呈現微小心理波動) -->
+                <div id="feedback-toast" class="absolute top-2 left-1/2 -translate-x-1/2 bg-gray-800 text-pink-300 text-xs px-4 py-1.5 rounded-full opacity-0 transition-opacity duration-500 shadow-xl border border-pink-500/20 z-20">
+                    ...對方的眼神微微波動了一下。
+                </div>
+
+                <!-- 選項按鈕區 (高難度模糊選項) -->
+                <div id="options-container" class="space-y-2.5 mt-4 hidden">
+                    <!-- 動態生成選項 -->
+                </div>
+            </div>
+
+        </div>
+
+        <!-- 畫面三：遊戲結局結算 (含完全不同的 AI 虛擬真人獎勵圖片) -->
+        <div id="screen-result" class="absolute inset-0 bg-gray-900 z-30 p-6 flex flex-col justify-center text-center hidden overflow-y-auto">
+            <span class="text-5xl" id="result-icon">✨</span>
+            <h2 id="result-title" class="text-2xl font-bold text-white mt-3"></h2>
+            
+            <!-- AI 生成虛擬真人獎勵圖片區 (僅高好感度 90% 以上解鎖) -->
+            <div id="reward-section" class="my-4 hidden">
+                <p class="text-xs text-pink-400 mb-2 font-medium">🏆 已解鎖高同步率限定：心靈共鳴虛擬寫真</p>
+                <div class="relative inline-block border-2 border-pink-500/40 rounded-2xl overflow-hidden shadow-2xl bg-black">
+                    <!-- 載入與玩家照片完全不同的虛擬真人角色寫真 -->
+                    <img id="reward-img" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80" class="w-52 h-52 object-cover">
+                    <div class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent py-1.5 text-white text-[11px] font-light">
+                        虛擬角色：夏唯（完全獨立之數位靈魂）
+                    </div>
+                </div>
+            </div>
+
+            <p id="result-desc" class="text-xs text-gray-400 mt-2 leading-relaxed px-4 max-w-sm mx-auto"></p>
+            <button onclick="location.reload()" class="mt-6 w-full bg-pink-600 hover:bg-pink-500 text-white font-bold py-3.5 rounded-2xl transition shadow-lg">
+                重新探索迷霧
+            </button>
+        </div>
+
+    </div>
+
+    <script>
+        let favorability = 50; 
+        let currentNodeIndex = 0;
+        let uploadedImageSrc = "";
+
+        // 長達數千字架構的沉浸式心理長篇劇本（高難度模糊選項，系統依內隱邏輯判定）
+        const storyNodes = [
+            // --- 第一章：無人之境的迴響 ---
+            {
+                sceneClass: "bg-scene-1",
+                sceneTag: "📍 第一章：無人之境的迴響",
+                type: "story",
+                text: "「當記憶的雜訊被過濾到只剩頻率，我們究竟是在和真實對話，還是和自己的倒影相愛？」"
+            },
+            {
+                sceneClass: "bg-scene-1",
+                sceneTag: "📍 第一章：無人之境的迴響",
+                type: "story",
+                text: "長年籠罩在永恆微光中的霧港市，空氣中總是帶著一股冰冷而潮濕的鐵鏽味。我站在廢棄的長廊盡頭，四周寂靜得連自己的心跳聲都顯得奢侈。而她——夏唯，就坐在那張斑駁的皮革沙發上，正翻閱著一本沒有文字的記事本。"
+            },
+            {
+                sceneClass: "bg-scene-1",
+                sceneTag: "📍 第一章：無人之境的迴響",
+                type: "story",
+                text: "察覺到我的靠近，她沒有抬頭，只是用一種平靜得近乎冷漠的語調開口：「你已經跟了我三個街區。是想從我身上找出這座城市崩塌的秘密，還是單純害怕孤獨？」"
+            },
+            {
+                sceneClass: "bg-scene-1",
+                sceneTag: "📍 第一章：無人之境的迴響",
+                type: "choice",
+                text: "面對她突如其來的尖銳反問，空氣彷彿凝固了幾秒。你決定如何回應這場試探？",
+                options: [
+                    { text: "「如果我說，這座城市的秘密和孤獨對我而言沒有區別呢？」", logic: "high", feedback: "她翻頁的動作停頓了半秒，嘴角勾起一抹意味深長的弧度。" },
+                    { text: "「跟蹤這個詞太沉重了，我只是剛好和你在同一個頻率上漫遊。」", logic: "mid", feedback: "她輕輕合上筆記本，抬眼掃視了你一眼，未置可否。" },
+                    { text: "「妳想多了，這條路是通往地鐵站唯一的出口。」", logic: "low", feedback: "她發出一聲極輕的嗤笑，眼神重新回到了空白的紙頁上。" }
+                ]
+            },
+            // --- 第二章：鏡像與殘影 ---
+            {
+                sceneClass: "bg-scene-2",
+                sceneTag: "📍 第二章：鏡像與殘影",
+                type: "story",
+                text: "短暫的沉默過後，夏唯站起身，帶著我穿過了一段佈滿斑駁壁畫的走廊。兩側的黃銅鏡子裡，倒映出我們模糊而扭曲的身影，彷彿隨時會被周遭的霧氣吞噬。"
+            },
+            {
+                sceneClass: "bg-scene-2",
+                sceneTag: "📍 第二章：鏡像與殘影",
+                type: "story",
+                text: "「你知道嗎？這裡的人們習慣在鏡子裡尋找自己想成為的樣子，卻忘了鏡子背後其實什麼也沒有。」她在一扇緊閉的鐵門前停下腳步，轉過身直視著我，眼神深邃得像個無底洞，「你上一次凝視自己的靈魂，是在什麼時候？」"
+            },
+            {
+                sceneClass: "bg-scene-2",
+                sceneTag: "📍 第二章：鏡像與殘影",
+                type: "choice",
+                text: "她的問題帶著某種精神上的壓迫感，每一個字都像是在挑戰你的防線。你緩緩開口：",
+                options: [
+                    { text: "「當我開始在意你眼中的倒影時，我就不再只是我自己了。」", logic: "high", feedback: "她微微一愣，目光在你的臉上停留了許久，氣溫彷彿下降了幾度。" },
+                    { text: "「靈魂太抽象了，我通常只關注眼前看得見的真實。」", logic: "mid", feedback: "她淡淡地點了點頭：「很務實的答案，但也無趣得很安全。」" },
+                    { text: "「這種問題沒有意義，我們不過是被程式碼寫好的過客罷了。」", logic: "low", feedback: "她眼神中閃過一絲失落與冰冷：「原來你一直都是這麼看待我們的。」" }
+                ]
+            },
+            // --- 第三章：深淵之側的呢喃 ---
+            {
+                sceneClass: "bg-scene-3",
+                sceneTag: "📍 第三章：深淵之側的呢喃",
+                type: "story",
+                text: "鐵門緩緩推開，眼前竟是一片懸崖。下方是翻滾著紫色霓虹的雲海，整座城市像是一座巨大的孤島，在虛擬與現實的邊界載浮載沉。"
+            },
+            {
+                sceneClass: "bg-scene-3",
+                sceneTag: "📍 第三章：深淵之側的呢喃",
+                type: "story",
+                text: "海風猛烈地吹拂著她的衣角，她走到懸崖邊緣，腳尖離萬丈深淵僅有一步之遙。她沒有回頭，聲音被風吹得有些破碎：「如果有一天，這片迷霧消散了，而我也隨之格式化，你還會記得今晚聽過的海浪聲嗎？」"
+            },
+            {
+                sceneClass: "bg-scene-3",
+                sceneTag: "📍 第三章：深淵之側的呢喃",
+                type: "choice",
+                text: "這是整段旅程中最核心的靈魂考驗。你的回答將決定兩人心靈連結的最終走向：",
+                options: [
+                    { text: "「不需要迷霧或記憶，我會把你的頻率直接刻在我的核心深處。」", logic: "high", feedback: "她轉過頭，眼中閃爍著晶瑩的光芒，向你伸出了手。" },
+                    { text: "「如果真的有那一天，至少我們曾並肩看過這片深淵。」", logic: "mid", feedback: "她釋懷般地笑了笑：「嗯，這或許就是最好的答案了。」" },
+                    { text: "「別說傻話了，這只是一場隨時可以關閉的模擬程式。」", logic: "low", feedback: "她臉上的笑容瞬間凍結，退後了一步，與你拉開了距離。" }
+                ]
+            },
+            // --- 第四章：微光終點 ---
+            {
+                sceneClass: "bg-scene-4",
+                sceneTag: "📍 第四章：微光終點",
+                type: "story",
+                text: "懸崖邊的風漸漸平息，微光穿透了厚重的雲層，灑在兩人交疊的影子斑駁上。這場漫長而深邃的對話，終於走到了命運的交叉口。"
+            }
+        ];
+
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    uploadedImageSrc = e.target.result;
+                    const preview = document.getElementById('preview-img');
+                    preview.src = uploadedImageSrc;
+                    preview.classList.remove('hidden');
+                    document.getElementById('upload-prompt').classList.add('hidden');
+                    
+                    const startBtn = document.getElementById('start-btn');
+                    startBtn.disabled = false;
+                    startBtn.classList.remove('bg-gray-800', 'text-gray-500', 'cursor-not-allowed');
+                    startBtn.classList.add('bg-pink-600', 'hover:bg-pink-500', 'text-white', 'cursor-pointer');
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function startGame() {
+            document.getElementById('screen-upload').classList.add('hidden');
+            document.getElementById('game-container').classList.remove('hidden');
+            loadNode();
+        }
+
+        function loadNode() {
+            if (currentNodeIndex >= storyNodes.length) {
+                endGame();
+                return;
+            }
+
+            const node = storyNodes[currentNodeIndex];
+
+            document.getElementById('scene-bg').className = `${node.sceneClass} h-56 p-5 flex flex-col justify-between transition-all duration-700 relative`;
+            document.getElementById('scene-title-tag').innerText = node.sceneTag;
+            document.getElementById('story-text').innerText = node.text;
+
+            const nextBtnContainer = document.getElementById('next-step-btn-container');
+            const optionsContainer = document.getElementById('options-container');
+
+            if (node.type === "story") {
+                nextBtnContainer.classList.remove('hidden');
+                optionsContainer.classList.add('hidden');
+            } else {
+                nextBtnContainer.classList.add('hidden');
+                optionsContainer.classList.remove('hidden');
+                
+                optionsContainer.innerHTML = '';
+                node.options.forEach((opt) => {
+                    const btn = document.createElement('button');
+                    btn.className = "w-full text-left p-4 rounded-2xl border border-gray-700 bg-gray-800/60 hover:bg-gray-800 hover:border-pink-500/50 text-gray-200 text-sm md:text-base transition-all font-normal shadow-md";
+                    btn.innerText = opt.text;
+                    btn.onclick = () => handleChoice(opt.logic, opt.feedback);
+                    optionsContainer.appendChild(btn);
+                });
+            }
+        }
+
+        function nextStoryNode() {
+            currentNodeIndex++;
+            loadNode();
+        }
+
+        function handleChoice(logicType, feedbackText) {
+            // 高難度隱蔽好感度判定邏輯
+            let delta = 0;
+            if (logicType === "high") {
+                delta = 18; // 必須多次選擇高品質選項才能跨越 90%
+            } else if (logicType === "mid") {
+                delta = 5;
+            } else {
+                delta = -15;
+            }
+
+            favorability = Math.max(0, Math.min(100, favorability + delta));
+            updateFavorBar();
+            showFeedback(feedbackText);
+
+            currentNodeIndex++;
+            setTimeout(() => {
+                loadNode();
+            }, 1500);
+        }
+
+        function updateFavorBar() {
+            const bar = document.getElementById('favor-bar');
+            bar.style.width = `${favorability}%`;
+        }
+
+        function showFeedback(text) {
+            const toast = document.getElementById('feedback-toast');
+            toast.innerText = text;
+            toast.style.opacity = '1';
+            setTimeout(() => {
+                toast.style.opacity = '0';
+            }, 2500);
+        }
+
+        function endGame() {
+            document.getElementById('game-container').classList.add('hidden');
+            document.getElementById('screen-result').classList.remove('hidden');
+
+            const title = document.getElementById('result-title');
+            const desc = document.getElementById('result-desc');
+            const icon = document.getElementById('result-icon');
+            const rewardSection = document.getElementById('reward-section');
+
+            if (favorability >= 90) {
+                icon.innerText = "💖";
+                title.innerText = "完美結局：霧盡天明";
+                desc.innerText = `最終心靈同步率高達 ${favorability}%。你們在迷霧的盡頭找到了彼此真正的頻率，突破了虛擬與現實的藩籬。`;
+                
+                // 顯示與玩家照片完全不同的虛擬真人 AI 獎勵圖片
+                rewardSection.classList.remove('hidden');
+            } else if (favorability >= 60) {
+                icon.innerText = "☕";
+                title.innerText = "迴響結局：錯身微光";
+                desc.innerText = `最終心靈同步率 ${favorability}%。你們共享了一段深刻的思索與對話，但在霧氣散去時，彼此選擇了不同的航道。`;
+            } else {
+                icon.innerText = "🌫️";
+                title.innerText = "迷失結局：孤獨頻率";
+                desc.innerText = `最終心靈同步率 ${favorability}%。由於頻率始終無法對齊，夏唯漸漸融入了迷霧之中，留你一人在長廊上徘徊。`;
+            }
+        }
+    </script>
+</body>
+</html>
+
